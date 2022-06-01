@@ -1,0 +1,28 @@
+---
+- name: add users from var file named users.yml
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - users.yml
+
+  tasks:
+    - name: debug
+      ansible.builtin.debug:
+        msg: "{{ item.name }} - {{ item.first | capitalize }} {{ item.middle|capitalize}} {{ item.last|capitalize }} - {{ item.name | password_hash('sha512', item.uid|string ) }} - {{ item.uid }}"
+      loop: "{{ users }}"
+
+    - name: add users
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        comment: "{{ item.first|capitalize }} {{ item.middle|capitalize }} {{ item.last|capitalize }}"
+        password: "{{ item.name|password_hash('sha512',item.uid|string) }}"
+        state: present
+      loop: "{{ users }}"
+
+    - name: write passwords
+      ansible.builtin.lineinfile:
+        path: "{{ item.name }}-{{ item.uid }}"
+        line: "{{ item.name }} {{ item.uid|string }}"
+        create: yes
+      loop: "{{ users }}"
+
